@@ -2,14 +2,15 @@ import lasio
 import torch
 import sys
 import numpy as np
-
+import copy
+import pandas as pd
 class WellDataset(torch.utils.data.Dataset):
 
     def __init__(self, path, return_sites=[], clean_sites=[], sequence_length=1):
         self.df = lasio.read(path).df().reset_index()[[site for site in return_sites]].dropna(subset=clean_sites)
         self.return_sites = return_sites
         self.sequence_length = sequence_length
-        
+    
         self.map = {}
 
     def __len__(self):
@@ -21,7 +22,7 @@ class WellDataset(torch.utils.data.Dataset):
             self.map[idx] = ret
         return self.map[idx]
 
-    def __add_(self, other_dataset):
+    def __add__(self, other_dataset):
 
         if type(other_dataset) != type(self):
             raise TypeError("Must be added with another WellDataset")
@@ -29,8 +30,8 @@ class WellDataset(torch.utils.data.Dataset):
         if set(other_dataset.return_sites) != set(self.return_sites):
             raise TypeError("Datasets must have the same return sites")
 
-        new_dataset = self.copy()
-        new_dataset.df = pandas.concat(self.df, other_dataset.df)
+        new_dataset = copy.deepcopy(self)
+        new_dataset.df = pd.concat([self.df, other_dataset.df])
         return new_dataset
     
     def mean(self):
